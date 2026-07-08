@@ -19,9 +19,11 @@ import 'package:intl/intl.dart';
 import 'package:habit_flow/presentation/providers/habit_provider.dart';
 import 'package:habit_flow/presentation/providers/category_provider.dart';
 import 'package:habit_flow/presentation/providers/habit_completion_provider.dart';
-import 'package:google_sign_in/google_sign_in.dart'; 
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:habit_flow/core/services/cloud_sync_service.dart';
-import 'package:habit_flow/data/local/database_helper.dart'; 
+import 'package:habit_flow/data/local/database_helper.dart';
+import 'package:habit_flow/core/services/backup_worker.dart';
+import 'package:workmanager/workmanager.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -50,6 +52,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {
       _autoBackupEnabled = value;
     });
+
+    if (value) {
+      await Workmanager().registerPeriodicTask(
+        dailyBackupUniqueName,
+        dailyBackupTaskName,
+        frequency: const Duration(hours: 24),
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
+    } else {
+      await Workmanager().cancelByUniqueName(dailyBackupUniqueName);
+    }
+
     if (value && _googleSignIn.currentUser != null) {
       try {
         setState(() => _isLoading = true);
@@ -205,9 +220,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.pop(dialogContext); // Pehle popup band karo
                 try {
                   await _googleSignIn.signOut(); // Asli logout yahan hoga
-                  
+
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('is_google_logged_in', false);
+                  await prefs.setBool('auto_backup_enabled', false);
+                  await Workmanager().cancelByUniqueName(dailyBackupUniqueName);
+                  if (mounted) {
+                    setState(() => _autoBackupEnabled = false);
+                  }
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

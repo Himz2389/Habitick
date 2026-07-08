@@ -10,11 +10,13 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart'; 
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:habit_flow/presentation/screens/alarm_screen.dart';
-import 'package:habit_flow/presentation/screens/splash_screen.dart'; 
+import 'package:habit_flow/presentation/screens/splash_screen.dart';
+import 'package:habit_flow/core/services/backup_worker.dart';
+import 'package:workmanager/workmanager.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart'; 
+import 'package:flutter_quill/flutter_quill.dart';
 
 
 
@@ -97,6 +99,28 @@ void main() async {
     globalHasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
   } catch (e) {
     globalHasSeenOnboarding = false;
+  }
+
+  //  3.5. DAILY AUTO BACKUP (WorkManager) — re-arm the periodic job on every
+  //  cold start. WorkManager persists scheduled work across restarts on its
+  //  own, but re-registering with `keep` is a cheap no-op if it's already
+  //  scheduled and heals the rare case where it got dropped (fresh install
+  //  onto an existing "enabled" pref, WorkManager DB cleared, etc).
+  try {
+    await Workmanager().initialize(backupCallbackDispatcher);
+
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('auto_backup_enabled') ?? false) {
+      await Workmanager().registerPeriodicTask(
+        dailyBackupUniqueName,
+        dailyBackupTaskName,
+        frequency: const Duration(hours: 24),
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
+    }
+  } catch (e) {
+    debugPrint("⚠️ Auto backup scheduling error: $e");
   }
 
   //  4. APP START

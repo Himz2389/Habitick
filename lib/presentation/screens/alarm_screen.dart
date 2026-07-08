@@ -118,6 +118,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
 
   @override
   void dispose() {
+    // Always release the lock-bypass window flags when this screen leaves the
+    // tree, no matter how it happens (not just the explicit button paths) —
+    // otherwise MainActivity can stay stuck showing over the lock screen.
+    _releaseLockScreen();
     _audioPlayer.dispose();
     super.dispose();
   }
