@@ -1,4 +1,4 @@
-import 'dart:io'; // 🚨 NAYA IMPORT
+import 'dart:io'; // 
 import 'package:path_provider/path_provider.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +14,7 @@ import 'package:habit_flow/presentation/screens/splash_screen.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart'; // 🚨 NAYA IMPORT
+import 'package:flutter_quill/flutter_quill.dart'; 
 
 
 
@@ -178,7 +178,7 @@ class HabitFlowApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(
           brightness: Brightness.dark,
           seedColor: const Color(0xFF8C52FF),
-          primary: const Color(0xFF8C52FF), // 🚨 NAYA PURPLE FOR DARK MODE
+          primary: const Color(0xFF8C52FF), 
           onPrimary: Colors.white,
           secondary: const Color(0xFF00E676), 
           surface: const Color.fromARGB(255, 0, 0, 0),
