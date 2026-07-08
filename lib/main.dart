@@ -205,31 +205,28 @@ class HabitFlowApp extends ConsumerWidget {
       
       home: Builder(
         builder: (context) {
+          // If the app was COLD-LAUNCHED by an alarm's full-screen intent, make
+          // AlarmScreen the ROOT route. Previously it was pushed on top of
+          // SplashScreen, but SplashScreen's 2.5s timer then did
+          // `pushReplacement`, silently replacing the AlarmScreen with Home.
           if (coldBootPayload != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (coldBootPayload != null) {
-                final data = coldBootPayload!.split('|||');
-                coldBootPayload = null; 
-                
-                if (data.length >= 3) {
-                  final bool isTask = (data.length >= 4 && data[3] == 'task');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AlarmScreen(
-                        id: int.parse(data[0]),
-                        title: data[1],
-                        description: data[2],
-                        isTask: isTask,
-                      ),
-                    ),
-                  );
-                }
+            final payload = coldBootPayload!;
+            coldBootPayload = null;
+            final data = payload.split('|||');
+            if (data.length >= 3) {
+              final int? id = int.tryParse(data[0]);
+              if (id != null) {
+                final bool isTask = (data.length >= 4 && data[3] == 'task');
+                return AlarmScreen(
+                  id: id,
+                  title: data[1],
+                  description: data[2],
+                  isTask: isTask,
+                );
               }
-            });
+            }
           }
-          
-          
+
           return SplashScreen(hasSeenOnboarding: globalHasSeenOnboarding ?? false);
         },
       ),

@@ -73,8 +73,16 @@ class NotificationService {
     if (androidImplementation != null) {
       await androidImplementation.requestNotificationsPermission();
 
-      //  2. EXACT ALARM PERMISSION 
+      //  2. EXACT ALARM PERMISSION
       await androidImplementation.requestExactAlarmsPermission();
+
+      //  3. FULL-SCREEN INTENT PERMISSION (Android 14+ / targetSdk 34+)
+      //  Without this, Android SILENTLY demotes `fullScreenIntent: true` to a
+      //  normal heads-up notification, so the AlarmScreen Activity never launches
+      //  over the lock screen. This is the root cause of the release-only
+      //  "nothing appears on lock screen" AND "custom ringtone doesn't play"
+      //  (the custom sound is played inside AlarmScreen, which never opens).
+      await androidImplementation.requestFullScreenIntentPermission();
     }
   }
 

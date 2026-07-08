@@ -58,15 +58,33 @@ class _AlarmScreenState extends State<AlarmScreen> {
     final prefs = await SharedPreferences.getInstance();
     final customPath = prefs.getString('custom_ringtone_path');
 
-    
-    if (customPath != null && customPath.isNotEmpty && File(customPath).existsSync()) {
-      try {
-        await _audioPlayer.setReleaseMode(ReleaseMode.loop); // Continuous bajega
-        await _audioPlayer.play(DeviceFileSource(customPath)); // 🚨 Ye raw path perfectly play karega!
-        _isCustomSoundPlaying = true;
-      } catch (e) {
-        debugPrint("Custom Ringtone Play Error: $e");
-      }
+    if (customPath == null || customPath.isEmpty) return;
+    if (!File(customPath).existsSync()) {
+      debugPrint("Custom ringtone file missing at: $customPath");
+      return;
+    }
+
+    try {
+      // Route playback through the ALARM audio stream so the custom ringtone
+      // plays at alarm volume and remains audible even when the ringer is
+      // silent / DND is on — just like a real alarm app. Without this,
+      // audioplayers uses the media stream, which can be inaudible on a
+      // locked/silenced device.
+      await _audioPlayer.setAudioContext(
+        AudioContext(
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: true,
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.alarm,
+            audioFocus: AndroidAudioFocus.gain,
+          ),
+        ),
+      );
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop); // Continuous
+      await _audioPlayer.play(DeviceFileSource(customPath));
+      _isCustomSoundPlaying = true;
+    } catch (e) {
+      debugPrint("Custom Ringtone Play Error: $e");
     }
   }
 

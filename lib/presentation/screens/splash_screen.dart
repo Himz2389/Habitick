@@ -46,16 +46,22 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _navigateToNextScreen() async {
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => widget.hasSeenOnboarding 
-              ? const HomeScreen() 
-              : const OnboardingScreen(),
-        ),
-      );
-    }
+    if (!mounted) return;
+
+    // Don't navigate if we're no longer the top route. An alarm's AlarmScreen
+    // may have been pushed on top of us while this 2.5s timer was pending —
+    // replacing the current route here would wipe out the alarm UI.
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => widget.hasSeenOnboarding
+            ? const HomeScreen()
+            : const OnboardingScreen(),
+      ),
+    );
   }
 
   @override
