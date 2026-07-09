@@ -169,7 +169,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> with WidgetsBindi
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.history, size: 28),
+                        icon: const Icon(Icons.history, size: 30),
                         color: theme.colorScheme.primary,
                         onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (context) => const JournalHistoryScreen()));
@@ -365,7 +365,7 @@ class JournalHistoryScreen extends ConsumerWidget {
         title: const Text("Journal History", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        elevation: 0,
+        elevation: 6,
       ),
       body: sortedJournals.isEmpty
           ? Center(
@@ -517,10 +517,11 @@ class _JournalReadScreenState extends ConsumerState<JournalReadScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(widget.journal.date, style: const TextStyle(fontSize: 16)),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        elevation: 0,
+        elevation: 6,
         actions: [
           if (_isEditing)
             IconButton(

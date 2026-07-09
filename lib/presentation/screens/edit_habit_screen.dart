@@ -179,6 +179,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         isDeleted: 0,
         timesPerDay: _timesPerDay, 
         reminderTimes: formattedTimes, 
+        displayOrder: widget.habit.displayOrder,
       );
 
       ref.read(habitProvider.notifier).updateHabit(updatedHabit);

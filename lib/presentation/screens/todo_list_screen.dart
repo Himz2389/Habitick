@@ -270,14 +270,16 @@ class _TodoListScreenState extends ConsumerState<TodoListScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(displayDate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        
       ),
       body: Column(
         children: [
           // === DATE SLIDER HEADER ===
           Container(
-            height: 50,
+            height: 40,
             color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -23,7 +23,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:habit_flow/core/services/cloud_sync_service.dart';
 import 'package:habit_flow/data/local/database_helper.dart'; 
 import 'package:workmanager/workmanager.dart';
-
+import 'package:flutter/services.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -46,6 +46,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _toggleAutoBackup(bool value) async {
+    HapticFeedback.mediumImpact();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_backup_enabled', value);
     setState(() {
@@ -206,6 +207,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+          
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
@@ -215,7 +217,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
           content: const Text(
-            "Are you sure you want to log out?\n\nWarning: Daily Auto Backup will be disabled and your new habits won't be saved to Google Drive.",
+            "Are you sure you want to log out?\n\nWarning: Backup will be disabled and your new habits won't be saved to Google Drive.",
             style: TextStyle(fontSize: 14, height: 1.4),
           ),
           actions: [

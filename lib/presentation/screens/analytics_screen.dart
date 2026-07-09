@@ -314,6 +314,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: chartColor.withValues(alpha: 0.05),
         centerTitle: false,
 

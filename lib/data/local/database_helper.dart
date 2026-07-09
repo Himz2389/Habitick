@@ -22,7 +22,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5, 
+      version: 6, 
       onCreate: _onCreate,
       onUpgrade:
           _onUpgrade, 
@@ -101,6 +101,18 @@ class DatabaseHelper {
         print("⚠️ deletedAt column error: $e");
       }
     }
+
+    if (oldVersion < 6) {
+      try {
+        await db.execute(
+          "ALTER TABLE habits ADD COLUMN display_order INTEGER DEFAULT 0",
+        );
+
+        print("✅ display_order column added!");
+      } catch (e) {
+        print("⚠️ display_order migration: $e");
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -143,7 +155,9 @@ class DatabaseHelper {
         isDeleted INTEGER DEFAULT 0,    
         timesPerDay INTEGER DEFAULT 1, 
         reminderTimes TEXT,
-        pauseLogs TEXT DEFAULT '[]',    
+        pauseLogs TEXT DEFAULT '[]',
+        display_order INTEGER DEFAULT 0,    
+        
         FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE CASCADE
       )
     ''');

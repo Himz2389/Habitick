@@ -146,8 +146,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         category: selectedCategoryObj.name, 
         color: selectedCategoryObj.color,   
         isPaused: 0,                        
-        timesPerDay: _timesPerDay, // 🚨 FIX: Ab timesPerDay hamesha save hoga, chahe reminder ON ho ya OFF
+        timesPerDay: _timesPerDay, 
         reminderTimes: formattedTimes, 
+        displayOrder: 0,
       );
 
       ref.read(habitProvider.notifier).addHabit(newHabit);

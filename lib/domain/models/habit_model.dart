@@ -16,6 +16,8 @@ class HabitModel {
   final int timesPerDay;
   final List<String> reminderTimes;
   final List<String> pauseLogs;
+  final int displayOrder;
+
 
   HabitModel({
     required this.id,
@@ -33,6 +35,7 @@ class HabitModel {
     required this.timesPerDay,
     required this.reminderTimes,
     this.pauseLogs = const [], 
+    required this.displayOrder,
   });
 
   Map<String, dynamic> toMap() {
@@ -52,6 +55,7 @@ class HabitModel {
       'timesPerDay': timesPerDay,
       'reminderTimes': jsonEncode(reminderTimes), 
       'pauseLogs': jsonEncode(pauseLogs), 
+      'display_order': displayOrder,
     };
   }
 
@@ -71,8 +75,8 @@ class HabitModel {
       deletedAt: map['deletedAt'], 
       timesPerDay: map['timesPerDay'] ?? 1,
       reminderTimes: List<String>.from(jsonDecode(map['reminderTimes'] ?? '[]')),
-      // 🚨 JSON se wapas list banayega
       pauseLogs: map['pauseLogs'] != null ? List<String>.from(jsonDecode(map['pauseLogs'])) : [],
+      displayOrder: map['display_order'] != null ? map['display_order'] as int : 0,
     );
   }
 
@@ -91,7 +95,8 @@ class HabitModel {
     String? deletedAt, 
     int? timesPerDay,
     List<String>? reminderTimes,
-    List<String>? pauseLogs, 
+    List<String>? pauseLogs,
+    int? displayOrder,
   }) {
     return HabitModel(
       id: id ?? this.id,
@@ -109,6 +114,7 @@ class HabitModel {
       timesPerDay: timesPerDay ?? this.timesPerDay,
       reminderTimes: reminderTimes ?? this.reminderTimes,
       pauseLogs: pauseLogs ?? this.pauseLogs, 
+      displayOrder: displayOrder ?? this.displayOrder,
     );
   }
 }

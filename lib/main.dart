@@ -233,7 +233,7 @@ class HabitFlowApp extends ConsumerWidget {
           primary: const Color(0xFF8C52FF), 
           onPrimary: Colors.white,
           secondary: const Color(0xFF00E676),
-          surface: const Color.fromARGB(255, 0, 0, 0),
+          surface: const Color.fromARGB(255, 20, 20, 20),
           onSurface: const Color.fromARGB(255, 255, 255, 255),
         ),
         appBarTheme: const AppBarTheme(

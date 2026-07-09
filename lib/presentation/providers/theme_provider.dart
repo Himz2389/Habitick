@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 // Riverpod Notifier Theme Manage karne ke liye
 class ThemeNotifier extends StateNotifier<ThemeMode> {
@@ -15,6 +16,7 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   }
 
   Future<void> toggleTheme(bool isDark) async {
+    HapticFeedback.mediumImpact();
     state = isDark ? ThemeMode.dark : ThemeMode.light;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isDarkMode', isDark);

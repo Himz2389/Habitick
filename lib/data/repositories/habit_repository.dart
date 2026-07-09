@@ -18,8 +18,10 @@ class HabitRepository {
   // 2. Read All Habits
   Future<List<HabitModel>> getHabits() async {
     final Database db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('habits');
-
+    final List<Map<String, dynamic>> maps = await db.query(
+      'habits',
+      orderBy: 'categoryId ASC, display_order ASC',
+    );
     return List.generate(maps.length, (i) {
       return HabitModel.fromMap(maps[i]);
     });
@@ -32,6 +34,7 @@ class HabitRepository {
       'habits',
       where: 'categoryId = ?',
       whereArgs: [categoryId],
+      orderBy: 'display_order ASC',
     );
 
     return List.generate(maps.length, (i) {
@@ -50,13 +53,41 @@ class HabitRepository {
     );
   }
 
+  Future<int> getNextDisplayOrder(String categoryId) async {
+    final Database db = await _dbHelper.database;
+
+    final result = await db.rawQuery(
+      '''
+    SELECT MAX(display_order) as maxOrder
+    FROM habits
+    WHERE categoryId = ?
+    ''',
+      [categoryId],
+    );
+
+    final maxOrder = result.first['maxOrder'] as int?;
+
+    return (maxOrder ?? -1) + 1;
+  }
+
   // 5. Delete Habit
   Future<int> deleteHabit(String id) async {
     final Database db = await _dbHelper.database;
-    return await db.delete(
-      'habits',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('habits', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateHabitOrders(List<HabitModel> habits) async {
+    final Database db = await _dbHelper.database;
+
+    await db.transaction((txn) async {
+      for (final habit in habits) {
+        await txn.update(
+          'habits',
+          {'display_order': habit.displayOrder},
+          where: 'id = ?',
+          whereArgs: [habit.id],
+        );
+      }
+    });
   }
 }
