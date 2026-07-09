@@ -21,8 +21,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset>
-  _buttonSlideAnimation;
+ // late Animation<Offset> _buttonSlideAnimation;
 
   final List<Widget> _screens = [
     const HabitBoardScreen(),
@@ -46,13 +45,13 @@ class _HomeScreenState extends State<HomeScreen>
 
     //  NAYA: Button ko Right to Left smoothly slide karne ka engine
 
-    _buttonSlideAnimation =
-        Tween<Offset>(
-          begin: const Offset(0.4, 0.0), // Halkaa sa right side se start hoga
-          end: Offset.zero, // Apni asli jagah par aakar rukega
-        ).animate(
-          CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic),
-        );
+   //_buttonSlideAnimation =
+   //   Tween<Offset>(
+   //   begin: const Offset(0.4, 0.0), // Halkaa sa right side se start hoga
+    //  end: Offset.zero, // Apni asli jagah par aakar rukega
+       // ).animate(
+       //   CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic),
+       // ); 
 
     _fadeController.forward();
   }

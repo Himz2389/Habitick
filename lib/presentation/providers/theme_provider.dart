@@ -16,8 +16,10 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   }
 
   Future<void> toggleTheme(bool isDark) async {
+    final newTheme = isDark ? ThemeMode.dark : ThemeMode.light;
+    if (state == newTheme) return;
     HapticFeedback.mediumImpact();
-    state = isDark ? ThemeMode.dark : ThemeMode.light;
+    state = newTheme;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isDarkMode', isDark);
   }
