@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:habit_flow/presentation/screens/home_screen.dart'; 
-import 'package:habit_flow/presentation/screens/onboarding_screen.dart';
+
 
 class SplashScreen extends StatefulWidget {
   final bool hasSeenOnboarding;
+  final bool launchedFromAlarm;
 
-  const SplashScreen({super.key, required this.hasSeenOnboarding});
+  const SplashScreen({super.key, required this.hasSeenOnboarding, this.launchedFromAlarm = false});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -39,24 +39,27 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // 4. Animation Shuru Karo
     _controller.forward();
 
-    // 5. Thik 2.5 second baad agle screen par bhej do
-    Future.delayed(const Duration(milliseconds: 2500), () {
+if (!widget.launchedFromAlarm) {
+  Future.delayed(
+    const Duration(milliseconds: 2500),
+    () {
       _navigateToNextScreen();
-    });
+      },
+    );
+  }
   }
 
   Future<void> _navigateToNextScreen() async {
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => widget.hasSeenOnboarding 
-              ? const HomeScreen() 
-              : const OnboardingScreen(),
-        ),
-      );
-    }
-  }
+
+  if (!mounted) return;
+
+  Navigator.pushReplacementNamed(
+    context,
+    widget.hasSeenOnboarding
+        ? '/home'
+        : '/onboarding',
+  );
+}
 
   @override
   void dispose() {

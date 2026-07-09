@@ -22,6 +22,7 @@ import 'package:habit_flow/presentation/providers/habit_completion_provider.dart
 import 'package:google_sign_in/google_sign_in.dart'; 
 import 'package:habit_flow/core/services/cloud_sync_service.dart';
 import 'package:habit_flow/data/local/database_helper.dart'; 
+import 'package:workmanager/workmanager.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -50,18 +51,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {
       _autoBackupEnabled = value;
     });
-    if (value && _googleSignIn.currentUser != null) {
-      try {
-        setState(() => _isLoading = true);
-        final message = await CloudSyncService().backupToGoogleDrive(_googleSignIn.currentUser!);
-        setState(() => _isLoading = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Auto Backup Enabled! $message"), backgroundColor: Colors.green),
-          );
+
+    if (value) {
+      // 🚨 ON kiya: Har 24 ghante ke liye task register karo
+      await Workmanager().registerPeriodicTask(
+        "habitflow_backup", // Unique ID
+        "googleDriveBackupTask", // Task Name (Dispatcher me yahi match kiya hai)
+        frequency: const Duration(hours: 24),
+        constraints: Constraints(
+          networkType: NetworkType.connected, // Backup ke liye net chahiye
+        ),
+      );
+
+      // Agar ON karte time net hai, to pehla backup instant maar do
+      if (_googleSignIn.currentUser != null) {
+        try {
+          setState(() => _isLoading = true);
+          final message = await CloudSyncService().backupToGoogleDrive(_googleSignIn.currentUser!);
+          setState(() => _isLoading = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Auto Backup Scheduled! $message"), backgroundColor: Colors.green),
+            );
+          }
+        } catch (e) {
+          setState(() => _isLoading = false);
         }
-      } catch (e) {
-        setState(() => _isLoading = false);
+      }
+    } else {
+      // 🚨 OFF kiya: Background task cancel kar do
+      await Workmanager().cancelByUniqueName("habitflow_backup");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Auto Backup Disabled."), backgroundColor: Colors.orange),
+        );
       }
     }
   }

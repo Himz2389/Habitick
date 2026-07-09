@@ -5,7 +5,14 @@ import 'package:timezone/timezone.dart' as tz;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:habit_flow/presentation/screens/alarm_screen.dart';
+import 'package:flutter/services.dart'; 
+
+// Tera banaya hua background callback (Safe rakha hai)
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse response) {
+  debugPrint("🔵 Background Notification Callback");
+  debugPrint("Payload: ${response.payload}");
+}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -15,6 +22,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  // 🚨 NAYA: METHOD CHANNEL SETUP (Native Android lock-screen bridge)
+  static const platform = MethodChannel('habitick/alarm_lock');
   
   Future<void> init(GlobalKey<NavigatorState> navigatorKey) async {
     tz.initializeTimeZones();
@@ -33,8 +42,11 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      
       onDidReceiveNotificationResponse: (NotificationResponse response) {
+        debugPrint("🟢 Notification Callback Triggered");
+        debugPrint("Payload: ${response.payload}");
+        debugPrint("Navigator: ${navigatorKey.currentState}");
+
         if (response.payload != null) {
           final data = response.payload!.split('|||');
           if (data.length >= 3) {
@@ -42,25 +54,27 @@ class NotificationService {
             final String title = data[1];
             final String body = data[2];
             final bool isTask =
-                data.length >= 4 &&
-                data[3] == 'task'; 
-
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => AlarmScreen(
-                  id: id,
-                  title: title,
-                  description: body,
-                  isTask: isTask,
-                ),
-              ),
+                data.length >= 4 && data[3] == 'task'; 
+                
+            // =========================================================
+            // 🚨 NAMED ROUTE: Ab mixed navigation nahi hogi (Bug Fixed)
+            // =========================================================
+            navigatorKey.currentState?.pushNamed(
+              '/alarm',
+              arguments: {
+                'id': id,
+                'title': title,
+                'description': body,
+                'isTask': isTask,
+              },
             );
           }
         }
       },
+      // Tera background response listener
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
   }
-
 
   Future<void> requestPermissions() async {
     // 1. Normal Notification Permission 
@@ -77,12 +91,17 @@ class NotificationService {
       await androidImplementation.requestExactAlarmsPermission();
     }
   }
-
   
   Future<void> cancelNotification(int id) async {
     await flutterLocalNotificationsPlugin.cancel(id);
+    // 🚨 NAYA: Cancel Native Alarm
+    try {
+      await platform.invokeMethod('cancelNativeAlarm', {'id': id});
+      debugPrint("✅ Native Alarm Cancelled for id: $id");
+    } catch (e) {
+      debugPrint("❌ Native Alarm Cancel Error: $e");
+    }
   }
-
   
   Future<void> showInstantNotification(String title, String body) async {
     const AndroidNotificationDetails androidDetails =
@@ -104,10 +123,8 @@ class NotificationService {
       platformDetails,
     );
   }
-
   
   // 1. HABITS DAILY ALARM ( with Custom Sound)
-  
   Future<void> scheduleDailyNotification({
     required int id,
     required String title,
@@ -129,7 +146,6 @@ class NotificationService {
 
     final Int32List insistentFlag = Int32List.fromList(<int>[4]);
 
-    // 🚨 NAYA: Storage se pata karo ki custom ringtone hai ya nahi
     final prefs = await SharedPreferences.getInstance();
     final customPath = prefs.getString('custom_ringtone_path');
 
@@ -139,7 +155,6 @@ class NotificationService {
     bool playNativeSound = true;
 
     if (customPath != null && customPath.isNotEmpty) {
-      
       nativeSound = null;
       playNativeSound = false;
       channelId = 'habit_alarm_channel_custom_v3_${customPath.hashCode}';
@@ -175,14 +190,24 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // (Sirf Daily wale me)
+      matchDateTimeComponents: DateTimeComponents.time, 
       payload: '$id|||$title|||$body|||habit',
     );
+
+    // 🚨 NAYA: Set Native Alarm
+    try {
+      await platform.invokeMethod('setNativeAlarm', {
+        'id': id,
+        'timeInMillis': scheduledDate.millisecondsSinceEpoch,
+        'payload': '$id|||$title|||$body|||habit',
+      });
+      debugPrint("✅ Native Habit Alarm Scheduled: id $id at $scheduledDate");
+    } catch (e) {
+      debugPrint("❌ Native Habit Alarm Error: $e");
+    }
   }
 
-
   // 2. TO-DOs KE LIYE EXACT ALARM
-  
   Future<void> scheduleExactNotification({
     required int id,
     required String title,
@@ -240,5 +265,17 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: '$id|||$title|||$body|||task',
     );
+
+    // 🚨 NAYA: Set Native Alarm
+    try {
+      await platform.invokeMethod('setNativeAlarm', {
+        'id': id,
+        'timeInMillis': scheduledTZDate.millisecondsSinceEpoch,
+        'payload': '$id|||$title|||$body|||task',
+      });
+      debugPrint("✅ Native Task Alarm Scheduled: id $id at $scheduledTZDate");
+    } catch (e) {
+      debugPrint("❌ Native Task Alarm Error: $e");
+    }
   }
 }

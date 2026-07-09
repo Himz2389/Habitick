@@ -1,5 +1,5 @@
-import 'dart:io'; // 🚨 NAYA IMPORT
-import 'package:path_provider/path_provider.dart'; 
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/presentation/providers/theme_provider.dart';
@@ -7,24 +7,24 @@ import 'package:habit_flow/core/services/notification_service.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:habit_flow/presentation/screens/alarm_screen.dart';
-import 'package:habit_flow/presentation/screens/splash_screen.dart'; 
-
+import 'package:habit_flow/presentation/screens/splash_screen.dart';
+import 'package:habit_flow/presentation/screens/onboarding_screen.dart';
+import 'package:habit_flow/presentation/screens/home_screen.dart'; 
+import 'package:workmanager/workmanager.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:habit_flow/core/services/cloud_sync_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart'; // 🚨 NAYA IMPORT
-
-
+import 'package:flutter_quill/flutter_quill.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 String? coldBootPayload;
-bool? globalHasSeenOnboarding; 
-
+bool? globalHasSeenOnboarding;
 
 //  NAYA FUNCTION: LIVE USERS KA RINGTONE DATA SECURE FOLDER ME MIGRATION KAREGA
-
 Future<void> _migrateOldRingtone() async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -32,20 +32,22 @@ Future<void> _migrateOldRingtone() async {
 
     if (currentPath != null && currentPath.isNotEmpty) {
       final appDir = await getApplicationDocumentsDirectory();
-      
+
       if (!currentPath.contains(appDir.path)) {
         File oldFile = File(currentPath);
-        
+
         if (oldFile.existsSync()) {
           final fileName = currentPath.split('/').last;
           final newSecurePath = '${appDir.path}/$fileName';
-          
+
           await oldFile.copy(newSecurePath);
           await prefs.setString('custom_ringtone_path', newSecurePath);
           debugPrint("✅ Old user's ringtone securely migrated!");
         } else {
           await prefs.remove('custom_ringtone_path');
-          debugPrint("⚠️ Old temporary ringtone was deleted by OS. Reset to default.");
+          debugPrint(
+            "⚠️ Old temporary ringtone was deleted by OS. Reset to default.",
+          );
         }
       }
     }
@@ -54,11 +56,63 @@ Future<void> _migrateOldRingtone() async {
   }
 }
 
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((taskName, inputData) async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Check karo agar task backup ka hai
+      if (taskName == "googleDriveBackupTask") {
+        final prefs = await SharedPreferences.getInstance();
+        bool isAutoBackupEnabled =
+            prefs.getBool('auto_backup_enabled') ?? false;
+
+        // Agar switch off hai, to task cancel karo (safety check)
+        if (!isAutoBackupEnabled) return Future.value(true);
+
+        // Daily Check lagao (har 24 ghante me ek baar)
+        String? lastBackup = prefs.getString('last_backup_date');
+        DateTime now = DateTime.now();
+        bool needsBackup = false;
+
+        if (lastBackup == null) {
+          needsBackup = true;
+        } else {
+          DateTime lastDate = DateTime.parse(lastBackup);
+          if (now.difference(lastDate).inDays >= 1 || now.day != lastDate.day) {
+            needsBackup = true;
+          }
+        }
+
+        // Agar backup required hai
+        if (needsBackup) {
+          final googleSignIn = GoogleSignIn(
+            scopes: ['email', 'https://www.googleapis.com/auth/drive.appdata'],
+          );
+
+          // Background me silently login retry karo
+          var account =
+              googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+
+          if (account != null) {
+            await CloudSyncService().backupToGoogleDrive(account);
+            await prefs.setString('last_backup_date', now.toIso8601String());
+            debugPrint("✅ Background Auto Backup Successful!");
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Background Task Error: $e");
+    }
+    return Future.value(true);
+  });
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //  0. MIGRATION CHALANA 
+  //  0. MIGRATION CHALANA
   await _migrateOldRingtone();
 
   //  1. TIMEZONE INITIALIZATION
@@ -67,7 +121,7 @@ void main() async {
     final localTimezone = await FlutterTimezone.getLocalTimezone();
     String tzName;
     try {
-      tzName = (localTimezone as dynamic).name; 
+      tzName = (localTimezone as dynamic).name;
     } catch (_) {
       tzName = localTimezone.toString();
     }
@@ -79,14 +133,15 @@ void main() async {
   //  2. NOTIFICATIONS INITIALIZATION
   try {
     final notificationService = NotificationService();
-    await notificationService.init(navigatorKey); 
+    await notificationService.init(navigatorKey);
     await notificationService.requestPermissions();
-    
-    final launchDetails = await notificationService.flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+    final launchDetails = await notificationService
+        .flutterLocalNotificationsPlugin
+        .getNotificationAppLaunchDetails();
     if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
       coldBootPayload = launchDetails.notificationResponse?.payload;
     }
-    
   } catch (e) {
     print("⚠️ Notification Error: $e");
   }
@@ -99,18 +154,15 @@ void main() async {
     globalHasSeenOnboarding = false;
   }
 
-  //  4. APP START
-  runApp(
-    Phoenix(
-      child: const ProviderScope(
-        child: HabitFlowApp(),
-      ),
-    ),
+  await Workmanager().initialize(
+    callbackDispatcher,
+    isInDebugMode: false, // Prod me false rakhna
   );
 
-  
-  //  5. NAYA SECURITY FIX
-  
+  //  4. APP START
+  runApp(Phoenix(child: const ProviderScope(child: HabitFlowApp())));
+
+  //  5. SECURITY FIX
   if (coldBootPayload == null) {
     try {
       const platform = MethodChannel('habitick/alarm_lock');
@@ -127,23 +179,21 @@ class HabitFlowApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentThemeMode = ref.watch(themeProvider);
+    
     return MaterialApp(
       title: 'Habitick',
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey, 
+      navigatorKey: navigatorKey,
 
-      //  YE 2 NAYI CHEEZEIN ADD KARNI HAIN YAHAN
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
-        FlutterQuillLocalizations.delegate, 
+        FlutterQuillLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en', 'US'), 
-      ],
-      
-      //  LIGHT THEME (Naya Energetic Purple)
+      supportedLocales: const [Locale('en', 'US')],
+
+      //  LIGHT THEME
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -151,38 +201,40 @@ class HabitFlowApp extends ConsumerWidget {
           seedColor: const Color(0xFF8C52FF),
           primary: const Color(0xFF8C52FF),
           onSurface: Colors.black,
-          secondary: const Color(0xFF00E676), 
-          surface: const Color(0xFFF8F9FA),   
+          secondary: const Color(0xFF00E676),
+          surface: const Color(0xFFF8F9FA),
         ),
         appBarTheme: const AppBarTheme(
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: Colors.transparent, 
-          foregroundColor: Color.fromARGB(255, 0, 0, 0),  
+          backgroundColor: Colors.transparent,
+          foregroundColor: Color.fromARGB(255, 0, 0, 0),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8C52FF), // 🚨 BUTTONS MEIN BHI PURPLE
+            backgroundColor: const Color(0xFF8C52FF),
             foregroundColor: Colors.white,
             elevation: 4,
             shadowColor: const Color(0xFF8C52FF).withValues(alpha: 0.4),
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
       ),
-      
-      //  DARK THEME (Glowing Purple)
+
+      //  DARK THEME
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           brightness: Brightness.dark,
           seedColor: const Color(0xFF8C52FF),
-          primary: const Color(0xFF8C52FF), // 🚨 NAYA PURPLE FOR DARK MODE
+          primary: const Color(0xFF8C52FF), 
           onPrimary: Colors.white,
-          secondary: const Color(0xFF00E676), 
+          secondary: const Color(0xFF00E676),
           surface: const Color.fromARGB(255, 0, 0, 0),
-          onSurface: const Color.fromARGB(255, 255, 255, 255),   
+          onSurface: const Color.fromARGB(255, 255, 255, 255),
         ),
         appBarTheme: const AppBarTheme(
           elevation: 0,
@@ -196,43 +248,86 @@ class HabitFlowApp extends ConsumerWidget {
             elevation: 4,
             shadowColor: const Color(0xFF8C52FF).withValues(alpha: 0.4),
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
-        
       ),
-      themeMode: currentThemeMode,  
-      
-      home: Builder(
-        builder: (context) {
-          if (coldBootPayload != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (coldBootPayload != null) {
-                final data = coldBootPayload!.split('|||');
-                coldBootPayload = null; 
-                
-                if (data.length >= 3) {
-                  final bool isTask = (data.length >= 4 && data[3] == 'task');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AlarmScreen(
-                        id: int.parse(data[0]),
-                        title: data[1],
-                        description: data[2],
-                        isTask: isTask,
-                      ),
-                    ),
-                  );
-                }
-              }
-            });
-          }
+      themeMode: currentThemeMode,
+
+      // =========================================================
+      // 🚨 NAYA ROUTING SYSTEM (home: hata diya gaya hai)
+      // =========================================================
+      initialRoute: coldBootPayload != null ? '/alarm' : '/splash',
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
           
-          
-          return SplashScreen(hasSeenOnboarding: globalHasSeenOnboarding ?? false);
-        },
-      ),
+          // 1. SPLASH ROUTE
+          case '/splash':
+            return MaterialPageRoute(
+              builder: (_) => SplashScreen(
+                hasSeenOnboarding: globalHasSeenOnboarding ?? false,
+              ),
+            );
+
+          // 2. HOME ROUTE
+          case '/home':
+            return MaterialPageRoute(
+              builder: (_) => const HomeScreen(), 
+            );
+
+          case '/onboarding':
+            return MaterialPageRoute(
+              builder: (_) => const OnboardingScreen(),
+            );
+
+          // 3. ALARM ROUTE (Payload ya Arguments ke sath)
+          case '/alarm':
+            // Agar app already open hai aur notification click hui
+            if (settings.arguments != null) {
+              final args = settings.arguments as Map<String, dynamic>;
+              return MaterialPageRoute(
+                builder: (_) => AlarmScreen(
+                  id: args['id'],
+                  title: args['title'],
+                  description: args['description'],
+                  isTask: args['isTask'],
+                ),
+              );
+            }
+
+            // Agar app poori tarah band thi aur Cold Boot se start hui (Native bypass)
+            if (coldBootPayload != null) {
+              final data = coldBootPayload!.split('|||');
+              final bool isTask = data.length >= 4 && data[3] == 'task';
+              
+              // 🚨 PRIVACY BREACH PERMANENT FIX: Payload ko extract karne ke baad hamesha ke liye destroy kar do
+              coldBootPayload = null; 
+
+              return MaterialPageRoute(
+                builder: (_) => AlarmScreen(
+                  id: int.parse(data[0]),
+                  title: data[1],
+                  description: data[2],
+                  isTask: isTask,
+                ),
+              );
+            }
+            
+            // Fallback (Agar galti se '/alarm' call hua bina kisi data ke)
+            return MaterialPageRoute(
+              builder: (_) => SplashScreen(
+                hasSeenOnboarding: globalHasSeenOnboarding ?? false,
+              ),
+            );
+
+          // DEFAULT FALLBACK ROUTE
+          default:
+            return MaterialPageRoute(
+              builder: (_) => HomeScreen());
+        }
+      },
     );
   }
 }
