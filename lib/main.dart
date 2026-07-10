@@ -12,13 +12,18 @@ import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:habit_flow/presentation/screens/alarm_screen.dart';
 import 'package:habit_flow/presentation/screens/splash_screen.dart';
 import 'package:habit_flow/presentation/screens/onboarding_screen.dart';
-import 'package:habit_flow/presentation/screens/home_screen.dart'; 
-import 'package:workmanager/workmanager.dart';
+import 'package:habit_flow/presentation/screens/home_screen.dart';
+// import 'package:workmanager/workmanager.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:habit_flow/core/services/cloud_sync_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:habit_flow/presentation/screens/permission_screen.dart';
+
+
+
+
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 String? coldBootPayload;
@@ -57,7 +62,7 @@ Future<void> _migrateOldRingtone() async {
 }
 
 @pragma('vm:entry-point')
-void callbackDispatcher() {
+  /* void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
@@ -83,7 +88,7 @@ void callbackDispatcher() {
           if (now.difference(lastDate).inDays >= 1 || now.day != lastDate.day) {
             needsBackup = true;
           }
-        }
+        } 
 
         // Agar backup required hai
         if (needsBackup) {
@@ -107,7 +112,7 @@ void callbackDispatcher() {
     }
     return Future.value(true);
   });
-}
+}*/
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,10 +159,7 @@ void main() async {
     globalHasSeenOnboarding = false;
   }
 
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: false, // Prod me false rakhna
-  );
+  //  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
 
   //  4. APP START
   runApp(Phoenix(child: const ProviderScope(child: HabitFlowApp())));
@@ -179,7 +181,7 @@ class HabitFlowApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentThemeMode = ref.watch(themeProvider);
-    
+
     return MaterialApp(
       title: 'Habitick',
       debugShowCheckedModeBanner: false,
@@ -230,7 +232,7 @@ class HabitFlowApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(
           brightness: Brightness.dark,
           seedColor: const Color(0xFF8C52FF),
-          primary: const Color(0xFF8C52FF), 
+          primary: const Color(0xFF8C52FF),
           onPrimary: Colors.white,
           secondary: const Color(0xFF00E676),
           surface: const Color.fromARGB(255, 20, 20, 20),
@@ -262,7 +264,6 @@ class HabitFlowApp extends ConsumerWidget {
       initialRoute: coldBootPayload != null ? '/alarm' : '/splash',
       onGenerateRoute: (settings) {
         switch (settings.name) {
-          
           // 1. SPLASH ROUTE
           case '/splash':
             return MaterialPageRoute(
@@ -273,13 +274,14 @@ class HabitFlowApp extends ConsumerWidget {
 
           // 2. HOME ROUTE
           case '/home':
-            return MaterialPageRoute(
-              builder: (_) => const HomeScreen(), 
-            );
+            return MaterialPageRoute(builder: (_) => const HomeScreen());
 
           case '/onboarding':
+            return MaterialPageRoute(builder: (_) => const OnboardingScreen());
+
+          case '/permissions':
             return MaterialPageRoute(
-              builder: (_) => const OnboardingScreen(),
+              builder: (_) => const PermissionScreen(),
             );
 
           // 3. ALARM ROUTE (Payload ya Arguments ke sath)
@@ -301,9 +303,9 @@ class HabitFlowApp extends ConsumerWidget {
             if (coldBootPayload != null) {
               final data = coldBootPayload!.split('|||');
               final bool isTask = data.length >= 4 && data[3] == 'task';
-              
+
               // 🚨 PRIVACY BREACH PERMANENT FIX: Payload ko extract karne ke baad hamesha ke liye destroy kar do
-              coldBootPayload = null; 
+              coldBootPayload = null;
 
               return MaterialPageRoute(
                 builder: (_) => AlarmScreen(
@@ -314,7 +316,7 @@ class HabitFlowApp extends ConsumerWidget {
                 ),
               );
             }
-            
+
             // Fallback (Agar galti se '/alarm' call hua bina kisi data ke)
             return MaterialPageRoute(
               builder: (_) => SplashScreen(
@@ -324,8 +326,7 @@ class HabitFlowApp extends ConsumerWidget {
 
           // DEFAULT FALLBACK ROUTE
           default:
-            return MaterialPageRoute(
-              builder: (_) => HomeScreen());
+            return MaterialPageRoute(builder: (_) => HomeScreen());
         }
       },
     );

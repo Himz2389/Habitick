@@ -5,7 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 
 // Tera banaya hua background callback (Safe rakha hai)
 @pragma('vm:entry-point')
@@ -24,11 +24,11 @@ class NotificationService {
 
   // 🚨 NAYA: METHOD CHANNEL SETUP (Native Android lock-screen bridge)
   static const platform = MethodChannel('habitick/alarm_lock');
-  
+
   Future<void> init(GlobalKey<NavigatorState> navigatorKey) async {
     tz.initializeTimeZones();
     final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-    
+
     tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -53,9 +53,8 @@ class NotificationService {
             final int id = int.parse(data[0]);
             final String title = data[1];
             final String body = data[2];
-            final bool isTask =
-                data.length >= 4 && data[3] == 'task'; 
-                
+            final bool isTask = data.length >= 4 && data[3] == 'task';
+
             // =========================================================
             // 🚨 NAMED ROUTE: Ab mixed navigation nahi hogi (Bug Fixed)
             // =========================================================
@@ -77,7 +76,7 @@ class NotificationService {
   }
 
   Future<void> requestPermissions() async {
-    // 1. Normal Notification Permission 
+    // 1. Normal Notification Permission
     final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
         flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<
@@ -87,27 +86,31 @@ class NotificationService {
     if (androidImplementation != null) {
       await androidImplementation.requestNotificationsPermission();
 
-      //  2. EXACT ALARM PERMISSION 
+      //  2. EXACT ALARM PERMISSION
       await androidImplementation.requestExactAlarmsPermission();
     }
   }
-  
+
+  Future<bool> isNotificationPermissionGranted() async {
+    final android = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    if (android == null) return true;
+
+    return await android.areNotificationsEnabled() ?? false;
+  }
+
   Future<void> cancelNotification(int id) async {
     await flutterLocalNotificationsPlugin.cancel(id);
-    // 🚨 NAYA: Cancel Native Alarm
-    try {
-      await platform.invokeMethod('cancelNativeAlarm', {'id': id});
-      debugPrint("✅ Native Alarm Cancelled for id: $id");
-    } catch (e) {
-      debugPrint("❌ Native Alarm Cancel Error: $e");
-    }
   }
-  
+
   Future<void> showInstantNotification(String title, String body) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           'instant_test_channel',
-          'Test Notifications', 
+          'Test Notifications',
           importance: Importance.max,
           priority: Priority.high,
         );
@@ -123,7 +126,7 @@ class NotificationService {
       platformDetails,
     );
   }
-  
+
   // 1. HABITS DAILY ALARM ( with Custom Sound)
   Future<void> scheduleDailyNotification({
     required int id,
@@ -150,8 +153,7 @@ class NotificationService {
     final customPath = prefs.getString('custom_ringtone_path');
 
     AndroidNotificationSound? nativeSound;
-    String channelId =
-        'habit_alarm_channel_v3'; 
+    String channelId = 'habit_alarm_channel_v3';
     bool playNativeSound = true;
 
     if (customPath != null && customPath.isNotEmpty) {
@@ -169,7 +171,7 @@ class NotificationService {
       id,
       title,
       body,
-      scheduledDate, 
+      scheduledDate,
       NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
@@ -182,29 +184,16 @@ class NotificationService {
           category: AndroidNotificationCategory.alarm,
           audioAttributesUsage: AudioAttributesUsage.alarm,
           icon: '@mipmap/ic_launcher',
-          sound: nativeSound, 
-          playSound:
-              playNativeSound, 
+          sound: nativeSound,
+          playSound: playNativeSound,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, 
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: '$id|||$title|||$body|||habit',
     );
-
-    // 🚨 NAYA: Set Native Alarm
-    try {
-      await platform.invokeMethod('setNativeAlarm', {
-        'id': id,
-        'timeInMillis': scheduledDate.millisecondsSinceEpoch,
-        'payload': '$id|||$title|||$body|||habit',
-      });
-      debugPrint("✅ Native Habit Alarm Scheduled: id $id at $scheduledDate");
-    } catch (e) {
-      debugPrint("❌ Native Habit Alarm Error: $e");
-    }
   }
 
   // 2. TO-DOs KE LIYE EXACT ALARM
@@ -212,9 +201,8 @@ class NotificationService {
     required int id,
     required String title,
     required String body,
-    required DateTime scheduledDate, 
+    required DateTime scheduledDate,
   }) async {
-    
     final tz.TZDateTime scheduledTZDate = tz.TZDateTime.from(
       scheduledDate,
       tz.local,
@@ -243,7 +231,7 @@ class NotificationService {
       id,
       title,
       body,
-      scheduledTZDate, 
+      scheduledTZDate,
       NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
@@ -265,17 +253,5 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: '$id|||$title|||$body|||task',
     );
-
-    // 🚨 NAYA: Set Native Alarm
-    try {
-      await platform.invokeMethod('setNativeAlarm', {
-        'id': id,
-        'timeInMillis': scheduledTZDate.millisecondsSinceEpoch,
-        'payload': '$id|||$title|||$body|||task',
-      });
-      debugPrint("✅ Native Task Alarm Scheduled: id $id at $scheduledTZDate");
-    } catch (e) {
-      debugPrint("❌ Native Task Alarm Error: $e");
-    }
   }
 }

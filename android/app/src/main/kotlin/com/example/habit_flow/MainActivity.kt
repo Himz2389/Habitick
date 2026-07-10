@@ -5,15 +5,35 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.os.Build
 import android.view.WindowManager
+import android.app.NotificationManager
+
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "habitick/alarm_lock"
+
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
+
+                "isFullScreenPermissionGranted" -> {
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+
+                        val manager =
+                            getSystemService(NotificationManager::class.java)
+
+                        result.success(manager.canUseFullScreenIntent())
+
+                    } else {
+
+                        result.success(true)
+
+                    }
+                }
+
                 "wakeUpScreen" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                         setShowWhenLocked(true)

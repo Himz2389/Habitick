@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:habit_flow/presentation/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // 🚨 NAYA IMPORT
+import 'package:habit_flow/presentation/screens/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -17,37 +18,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<Map<String, String>> _onboardingData = [
     {
       "title": "Design Your Perfect Routine",
-      "description": "Create custom habits tailored to your lifestyle. Organise them by specialized categories and choose vibrant dynamic branding colors.",
+      "description":
+          "Create custom habits tailored to your lifestyle. Organise them by specialized categories and choose vibrant dynamic branding colors.",
       "icon": "🎯",
     },
     {
       "title": "Track with Precision",
-      "description": "Set dynamic daily frequencies for habits like drinking water. Tap multi-step counters seamlessly and watch your progress scale natively.",
+      "description":
+          "Set dynamic daily frequencies for habits like drinking water. Tap multi-step counters seamlessly and watch your progress scale natively.",
       "icon": "⚡",
     },
     {
       "title": "Analyze & Grow Consistent",
-      "description": "Unlock advanced performance metrics, success trends, and maintain glowing streaks with immersive and zero-delay graphical analytics.",
+      "description":
+          "Unlock advanced performance metrics, success trends, and maintain glowing streaks with immersive and zero-delay graphical analytics.",
       "icon": "📊",
     },
   ];
 
-  
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('hasSeenOnboarding', true); 
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    }
+    await prefs.setBool('hasSeenOnboarding', true);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/permissions');
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -57,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.topRight,
               padding: const EdgeInsets.only(right: 16, top: 8),
               child: TextButton(
-                onPressed: _completeOnboarding, 
+                onPressed: _completeOnboarding,
                 child: Text(
                   "Skip",
                   style: TextStyle(
@@ -91,14 +90,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: 180,
                           height: 180,
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 blurRadius: 30,
                                 offset: const Offset(0, 10),
-                              )
+                              ),
                             ],
                           ),
                           child: Center(
@@ -125,7 +128,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
                             fontSize: 16,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                             height: 1.5,
                           ),
                         ),
@@ -138,7 +143,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // Navigation Indicators & Buttons
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 40.0,
+                vertical: 24.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -151,15 +159,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 8,
                         width: _currentPage == index ? 24 : 8,
                         decoration: BoxDecoration(
-                          color: _currentPage == index 
-                              ? theme.colorScheme.primary 
-                              : theme.colorScheme.primary.withValues(alpha: 0.2),
+                          color: _currentPage == index
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primary.withValues(
+                                  alpha: 0.2,
+                                ),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
                   ),
-                  
+
                   ElevatedButton(
                     onPressed: () {
                       if (_currentPage == _onboardingData.length - 1) {
@@ -175,10 +185,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
                     ),
                     child: Text(
-                      _currentPage == _onboardingData.length - 1 ? "Get Started" : "Next",
+                      _currentPage == _onboardingData.length - 1
+                          ? "Get Started"
+                          : "Next",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

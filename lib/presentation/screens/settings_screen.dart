@@ -22,11 +22,18 @@ import 'package:habit_flow/presentation/providers/habit_completion_provider.dart
 import 'package:google_sign_in/google_sign_in.dart'; 
 import 'package:habit_flow/core/services/cloud_sync_service.dart';
 import 'package:habit_flow/data/local/database_helper.dart'; 
-import 'package:workmanager/workmanager.dart';
+// import 'package:workmanager/workmanager.dart';
 import 'package:flutter/services.dart';
+import 'package:habit_flow/core/services/alarm_permission_service.dart';
+
+
+
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
+
+  
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -37,6 +44,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? _customRingtonePath;
   bool _autoBackupEnabled = false;
   String _appVersion = "Loading...";
+  
+  final permissionService = AlarmPermissionService();
+
 
   Future<void> _loadAutoBackupPref() async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,14 +65,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (value) {
       // 🚨 ON kiya: Har 24 ghante ke liye task register karo
-      await Workmanager().registerPeriodicTask(
-        "habitflow_backup", // Unique ID
-        "googleDriveBackupTask", // Task Name (Dispatcher me yahi match kiya hai)
-        frequency: const Duration(hours: 24),
-        constraints: Constraints(
-          networkType: NetworkType.connected, // Backup ke liye net chahiye
-        ),
-      );
+    //  await Workmanager().registerPeriodicTask(
+    //    "habitflow_backup", // Unique ID
+    //    "googleDriveBackupTask", // Task Name (Dispatcher me yahi match kiya hai)
+    //    frequency: const Duration(hours: 24),
+    //    constraints: Constraints(
+    //      networkType: NetworkType.connected, // Backup ke liye net chahiye
+    //    ),
+    //  );
 
       // Agar ON karte time net hai, to pehla backup instant maar do
       if (_googleSignIn.currentUser != null) {
@@ -80,13 +90,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
       }
     } else {
-      // 🚨 OFF kiya: Background task cancel kar do
-      await Workmanager().cancelByUniqueName("habitflow_backup");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Auto Backup Disabled."), backgroundColor: Colors.orange),
-        );
-      }
+      
+    //  await Workmanager().cancelByUniqueName("habitflow_backup");
+    //  if (mounted) {
+    //    ScaffoldMessenger.of(context).showSnackBar(
+    //      const SnackBar(content: Text("Auto Backup Disabled."), backgroundColor: Colors.orange),
+    //    ); 
+    //  }
     }
   }
 
@@ -854,6 +864,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // Tile par tap karne se naya pick hoga (Change karne ke liye)
                   onTap: _pickCustomRingtone,
                 ),
+
+                Divider(
+  height: 1,
+  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+  indent: 60,
+),
+
+ListTile(
+  leading: Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: Colors.red.withValues(alpha: 0.1),
+      shape: BoxShape.circle,
+    ),
+    child: const Icon(
+      Icons.alarm_on_rounded,
+      color: Colors.red,
+    ),
+  ),
+
+  title: const Text(
+    "Alarm Permissions",
+    style: TextStyle(
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+
+  subtitle: FutureBuilder<bool>(
+    future: permissionService.isFullScreenPermissionGranted(),
+    builder: (context, snapshot) {
+
+      final granted = snapshot.data ?? false;
+
+      return Text(
+        granted
+            ? "All alarm permissions are configured."
+            : "Full-screen alarm is disabled.",
+        style: TextStyle(
+          fontSize: 12,
+          color: granted
+              ? Colors.green
+              : Colors.red,
+        ),
+      );
+    },
+  ),
+
+  trailing: const Icon(
+    Icons.chevron_right,
+    color: Colors.grey,
+  ),
+
+  onTap: () async {
+
+    await permissionService.openFullScreenSettings();
+
+    if (mounted) {
+      setState(() {});
+    }
+
+  },
+),
                 
               ],
             ),

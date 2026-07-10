@@ -24,7 +24,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
 
-            android:showWhenLocked="true" 
+            android:showWhenLocked="true"
             android:turnScreenOn="true"
             >
             
@@ -41,7 +41,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
+        
         
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
