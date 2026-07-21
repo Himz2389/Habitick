@@ -14,8 +14,6 @@ import 'package:habit_flow/presentation/screens/splash_screen.dart';
 import 'package:habit_flow/presentation/screens/onboarding_screen.dart';
 import 'package:habit_flow/presentation/screens/home_screen.dart';
 // import 'package:workmanager/workmanager.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:habit_flow/core/services/cloud_sync_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -62,57 +60,6 @@ Future<void> _migrateOldRingtone() async {
 }
 
 @pragma('vm:entry-point')
-  /* void callbackDispatcher() {
-  Workmanager().executeTask((taskName, inputData) async {
-    try {
-      WidgetsFlutterBinding.ensureInitialized();
-
-      // Check karo agar task backup ka hai
-      if (taskName == "googleDriveBackupTask") {
-        final prefs = await SharedPreferences.getInstance();
-        bool isAutoBackupEnabled =
-            prefs.getBool('auto_backup_enabled') ?? false;
-
-        // Agar switch off hai, to task cancel karo (safety check)
-        if (!isAutoBackupEnabled) return Future.value(true);
-
-        // Daily Check lagao (har 24 ghante me ek baar)
-        String? lastBackup = prefs.getString('last_backup_date');
-        DateTime now = DateTime.now();
-        bool needsBackup = false;
-
-        if (lastBackup == null) {
-          needsBackup = true;
-        } else {
-          DateTime lastDate = DateTime.parse(lastBackup);
-          if (now.difference(lastDate).inDays >= 1 || now.day != lastDate.day) {
-            needsBackup = true;
-          }
-        } 
-
-        // Agar backup required hai
-        if (needsBackup) {
-          final googleSignIn = GoogleSignIn(
-            scopes: ['email', 'https://www.googleapis.com/auth/drive.appdata'],
-          );
-
-          // Background me silently login retry karo
-          var account =
-              googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-
-          if (account != null) {
-            await CloudSyncService().backupToGoogleDrive(account);
-            await prefs.setString('last_backup_date', now.toIso8601String());
-            debugPrint("✅ Background Auto Backup Successful!");
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint("Background Task Error: $e");
-    }
-    return Future.value(true);
-  });
-}*/
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -159,7 +106,6 @@ void main() async {
     globalHasSeenOnboarding = false;
   }
 
-  //  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
 
   //  4. APP START
   runApp(Phoenix(child: const ProviderScope(child: HabitFlowApp())));

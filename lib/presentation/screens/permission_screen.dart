@@ -89,11 +89,6 @@ class _PermissionScreenState extends State<PermissionScreen> {
               ),
 
               ListTile(
-                leading: const Icon(Icons.check_circle, color: Colors.green),
-                title: const Text("Exact Alarm"),
-              ),
-
-              ListTile(
                 leading: Icon(
                   _fullscreenGranted ? Icons.check_circle : Icons.cancel,
                   color: _fullscreenGranted ? Colors.green : Colors.red,

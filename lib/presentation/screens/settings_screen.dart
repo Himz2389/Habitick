@@ -7,25 +7,29 @@ import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:habit_flow/presentation/screens/home_screen.dart';
-import 'package:habit_flow/presentation/providers/theme_provider.dart'; 
-import 'package:habit_flow/presentation/screens/category_list_screen.dart'; 
-import 'package:habit_flow/presentation/screens/habit_archive_screen.dart'; 
-import 'package:habit_flow/core/services/notification_service.dart';
-import 'package:habit_flow/data/repositories/habit_repository.dart';
-import 'package:habit_flow/data/repositories/todo_repository.dart';
 import 'package:intl/intl.dart'; 
+// import 'package:workmanager/workmanager.dart';
+import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import 'package:path_provider/path_provider.dart';
+import 'package:habit_flow/presentation/providers/theme_provider.dart'; 
 import 'package:habit_flow/presentation/providers/habit_provider.dart';
 import 'package:habit_flow/presentation/providers/category_provider.dart';
 import 'package:habit_flow/presentation/providers/habit_completion_provider.dart';
-import 'package:google_sign_in/google_sign_in.dart'; 
-import 'package:habit_flow/core/services/cloud_sync_service.dart';
-import 'package:habit_flow/data/local/database_helper.dart'; 
-// import 'package:workmanager/workmanager.dart';
-import 'package:flutter/services.dart';
-import 'package:habit_flow/core/services/alarm_permission_service.dart';
+import 'package:habit_flow/presentation/providers/journal_provider.dart';
 
+import 'package:habit_flow/core/services/notification_service.dart'; 
+import 'package:habit_flow/core/services/cloud_sync_service.dart';
+import 'package:habit_flow/core/services/alarm_permission_service.dart';
+import 'package:habit_flow/data/local/database_helper.dart';
+
+import 'package:habit_flow/data/repositories/habit_repository.dart';
+import 'package:habit_flow/data/repositories/todo_repository.dart';
+
+import 'package:habit_flow/presentation/screens/category_list_screen.dart'; 
+import 'package:habit_flow/presentation/screens/habit_archive_screen.dart'; 
+import 'package:habit_flow/presentation/screens/home_screen.dart';
 
 
 
@@ -306,6 +310,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ref.invalidate(habitProvider);
                 ref.invalidate(categoryProvider);
                 ref.invalidate(habitCompletionProvider);
+                ref.invalidate(journalProvider);
                 
 
                 if (mounted) {

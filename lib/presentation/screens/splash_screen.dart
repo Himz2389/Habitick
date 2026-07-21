@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:habit_flow/core/services/alarm_permission_service.dart';
+import 'package:habit_flow/core/services/notification_service.dart';
+
 
 
 class SplashScreen extends StatefulWidget {
@@ -55,25 +58,48 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateToNextScreen() async {
-    if (!mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenPermissionGuide =
-    prefs.getBool('hasSeenPermissionGuide') ?? false;
+  if (!mounted) return;
 
-    if (!mounted) return;
+  final prefs = await SharedPreferences.getInstance();
 
-    if (!widget.hasSeenOnboarding) {
-      Navigator.pushReplacementNamed(context, '/onboarding');
-      return;
-    }
+  final hasSeenPermissionGuide =
+      prefs.getBool('hasSeenPermissionGuide') ?? false;
 
-    Navigator.pushReplacementNamed(
-      context,
-      hasSeenPermissionGuide 
-        ? '/home' 
-        : '/permissions',
-    );
+  if (!widget.hasSeenOnboarding) {
+    Navigator.pushReplacementNamed(context, '/onboarding');
+    return;
   }
+
+  // Agar guide pehle hi dekh chuka hai
+  if (hasSeenPermissionGuide) {
+    Navigator.pushReplacementNamed(context, '/home');
+    return;
+  }
+
+  // 🚀 NAYA CHECK
+  final permissionService = AlarmPermissionService();
+  final notificationService = NotificationService();
+
+  final notificationGranted =
+      await notificationService.isNotificationPermissionGranted();
+
+  final fullScreenGranted =
+      await permissionService.isFullScreenPermissionGranted();
+
+  // Agar permissions already mil chuki hain
+  if (notificationGranted && fullScreenGranted) {
+
+    // Dobara guide kabhi mat dikhana
+    await prefs.setBool('hasSeenPermissionGuide', true);
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(context, '/home');
+    return;
+  }
+
+  Navigator.pushReplacementNamed(context, '/permissions');
+}
 
   @override
   void dispose() {
